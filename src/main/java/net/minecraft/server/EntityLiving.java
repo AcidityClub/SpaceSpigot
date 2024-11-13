@@ -21,6 +21,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
+import space.acidity.spigot.SpaceSpigot;
 // CraftBukkit end
 
 public abstract class EntityLiving extends Entity {
@@ -876,20 +877,41 @@ public abstract class EntityLiving extends Entity {
 
     public void a(Entity entity, float f, double d0, double d1) {
         if (this.random.nextDouble() >= this.getAttributeInstance(GenericAttributes.c).getValue()) {
+            // improved knockback epic stuff
             this.ai = true;
-            float f1 = MathHelper.sqrt(d0 * d0 + d1 * d1);
-            float f2 = 0.4F;
+            final float f2 = MathHelper.sqrt(d0 * d0 + d1 * d1);
+            float f3 = 0.4f;
+            float f4 = 0.4f;
 
-            this.motX /= 2.0D;
-            this.motY /= 2.0D;
-            this.motZ /= 2.0D;
-            this.motX -= d0 / (double) f1 * (double) f2;
-            this.motY += (double) f2;
-            this.motZ -= d1 / (double) f1 * (double) f2;
-            if (this.motY > 0.4000000059604645D) {
-                this.motY = 0.4000000059604645D;
+            double knockbackHorizontal = 0.85;
+            double knockbackVertical = 1.0;
+
+            // best lag comp ww
+            if (entity instanceof EntityPlayer && this instanceof EntityPlayer) {
+                EntityPlayer player = (EntityPlayer) entity;
+                EntityPlayer self = (EntityPlayer) this;
+
+                int calculatedPing = (self.ping + player.ping) / 2;
+
+                knockbackHorizontal = Math.max(0.7, 0.85 - 0.005 * ((calculatedPing - 250) / 10.0));
+                System.out.println("[SPACESPIGOT DEBUG] Knockback -> " + knockbackHorizontal);
             }
 
+            final double knockbackReductionHorizontal = 1.0 - knockbackHorizontal;
+            final double knockbackReductionVertical = 1.0 - knockbackVertical;
+            final double frictionHorizontal = 2.0 - knockbackReductionHorizontal;
+            final double frictionVertical = 2.0 - knockbackReductionVertical - 0.25;
+            f3 *= (float)(1.0 - knockbackReductionHorizontal);
+            f4 *= (float)(1.0 - knockbackReductionVertical);
+            this.motX /= frictionHorizontal;
+            this.motY /= frictionVertical;
+            this.motZ /= frictionHorizontal;
+            this.motX -= d0 / f2 * f3;
+            this.motY += f4;
+            this.motZ -= d1 / f2 * f3;
+            if (this.motY > 0.4000000059604645) {
+                this.motY = 0.4000000059604645;
+            }
         }
     }
 
